@@ -1,6 +1,7 @@
-from sqlalchemy import Column
-from sqlalchemy.types import DateTime, Integer, PickleType
-from sqlalchemy.ext.declarative import declared_attr, declarative_base
+from copy import copy
+
+from sqlalchemy import Column, func, Integer, PickleType, DateTime
+from sqlalchemy.ext.declarative import declared_attr
 
 
 class TablenameMixin(object):
@@ -8,11 +9,27 @@ class TablenameMixin(object):
     def __tablename__(cls):
         return cls.__name__.lower()
 
-@declarative_base
-class Base(object):
+
+class IdMixin(object):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+
+class DateIndexMixin(object):
+    date = Column(DateTime, unique=True)
+
+
+class RevisionDatesMixin(object):
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+
+class DataMixin(object):
+    data = Column(PickleType)
+
+    def update_data(self):
+        self.data = copy(self.data)
+
+
+class PersistableMixin(TablenameMixin, IdMixin, DateIndexMixin, RevisionDatesMixin, DataMixin):
     pass
 
-class Persistable(Base, TablenameMixin):
-    id = Column(Integer, primary_key=True)
-    date = Column(DateTime, unique=True)
-    obj = Column(PickleType)
